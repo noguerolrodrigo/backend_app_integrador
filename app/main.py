@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import SQLModel, Session
+from sqlmodel import Session
 from app.core.database import engine
 from app.db.seed import seed_database
 
@@ -47,9 +47,6 @@ from app.modules.auth.model import RefreshToken  # noqa: F401 — registra tabla
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crear todas las tablas
-    SQLModel.metadata.create_all(engine)
-    
     # Poblar seed data y COMMITEAR — sin commit los datos se pierden al cerrar sesión
     with Session(engine) as session:
         seed_database(session)

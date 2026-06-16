@@ -1,0 +1,77 @@
+### 1. Obtener token ADMIN
+POST http://localhost:8000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### 2. Crear categoría padre (ADMIN)
+POST http://localhost:8000/api/v1/categorias/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Pizzas",
+  "descripcion": "Todas las pizzas",
+  "imagen_url": null,
+  "parent_id": null
+}
+
+### 3. Crear categoría hija (ADMIN)
+POST http://localhost:8000/api/v1/categorias/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Pizzas Especiales",
+  "descripcion": "Pizzas gourmet",
+  "imagen_url": null,
+  "parent_id": 1
+}
+
+### 4. Listar categorías (ADMIN) — solo activas
+GET http://localhost:8000/api/v1/categorias/
+Authorization: Bearer {{token}}
+
+### 5. Obtener categoría por ID (ADMIN)
+GET http://localhost:8000/api/v1/categorias/1
+Authorization: Bearer {{token}}
+
+### 6. Actualizar categoría (ADMIN)
+PUT http://localhost:8000/api/v1/categorias/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Pizzas Actualizado",
+  "descripcion": "casi todas las pizzas",
+  "parent_id": null
+}
+
+### 7. Soft-delete categoría (ADMIN) — sin productos activos
+DELETE http://localhost:8000/api/v1/categorias/1
+Authorization: Bearer {{token}}
+
+### 8. Verificar que está eliminada (ADMIN) → 404
+GET http://localhost:8000/api/v1/categorias/1
+Authorization: Bearer {{token}}
+
+### 9. Listar categorías públicas (paginado) — sin auth
+GET http://localhost:8000/api/v1/categorias/public?limit=10&offset=0
+
+### 10. Listar categorías públicas con filtro parent_id
+GET http://localhost:8000/api/v1/categorias/public?parent_id=1&limit=20&offset=0
+
+### 11. Sin auth en GET / debe dar 403
+GET http://localhost:8000/api/v1/categorias/
+
+### 12. Sin auth en POST debe dar 403
+POST http://localhost:8000/api/v1/categorias/
+Content-Type: application/json
+
+{
+  "nombre": "NoAuth",
+  "parent_id": null
+}

@@ -1,0 +1,208 @@
+### ============================================
+### TEST SUITE: DIRECCION ENTREGA MODULE
+### Pruebas completas del módulo Direcciones
+### ============================================
+
+### Variables
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/v1
+
+### ============================================
+### 1. CREAR DIRECCIÓN
+### ============================================
+
+### 1.1 Crear primera dirección (automáticamente es principal)
+POST {{baseUrl}}{{apiPrefix}}/direcciones/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "alias": "Casa",
+  "calle": "Calle Principal",
+  "numero": "123",
+  "apartamento": "4B",
+  "localidad": "La Plata",
+  "codigo_postal": "1900",
+  "provincia": "Buenos Aires",
+  "notas": "Dejar en portería",
+  "es_principal": false
+}
+
+### 1.2 Crear segunda dirección como NO principal
+POST {{baseUrl}}{{apiPrefix}}/direcciones/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "alias": "Trabajo",
+  "calle": "Calle Secundaria",
+  "numero": "456",
+  "localidad": "Buenos Aires",
+  "codigo_postal": "1010",
+  "es_principal": false
+}
+
+### 1.3 Crear tercera dirección y marcarla como principal (debe desactivar Casa)
+POST {{baseUrl}}{{apiPrefix}}/direcciones/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "alias": "Gym",
+  "calle": "Avenida Fitness",
+  "numero": "789",
+  "localidad": "La Plata",
+  "es_principal": true
+}
+
+### 1.4 Crear dirección para otro usuario
+POST {{baseUrl}}{{apiPrefix}}/direcciones/
+Content-Type: application/json
+
+{
+  "usuario_id": 2,
+  "alias": "Casa",
+  "calle": "Calle Diferente",
+  "numero": "999",
+  "localidad": "Buenos Aires",
+  "es_principal": false
+}
+
+### ============================================
+### 2. LISTAR DIRECCIONES
+### ============================================
+
+### 2.1 Listar direcciones del usuario 1
+GET {{baseUrl}}{{apiPrefix}}/direcciones/?usuario_id=1
+
+### 2.2 Listar direcciones del usuario 2
+GET {{baseUrl}}{{apiPrefix}}/direcciones/?usuario_id=2
+
+### 2.3 Listar con formato completo (usuario 1)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1
+
+### 2.4 Listar con formato completo (usuario 2)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/2
+
+### ============================================
+### 3. OBTENER DIRECCIÓN PRINCIPAL
+### ============================================
+
+### 3.1 Obtener principal del usuario 1 (debe ser Gym)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### 3.2 Obtener principal del usuario 2
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/2/principal
+
+### ============================================
+### 4. OBTENER DIRECCIÓN POR ID
+### ============================================
+
+### 4.1 Obtener dirección ID 1 (Casa)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/1
+
+### 4.2 Obtener dirección ID 2 (Trabajo)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/2
+
+### 4.3 Obtener dirección ID 3 (Gym - principal)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/3
+
+### 4.4 Obtener dirección inexistente
+GET {{baseUrl}}{{apiPrefix}}/direcciones/99999
+
+### ============================================
+### 5. ACTUALIZAR DIRECCIÓN
+### ============================================
+
+### 5.1 Actualizar alias de Casa
+PATCH {{baseUrl}}{{apiPrefix}}/direcciones/1
+Content-Type: application/json
+
+{
+  "alias": "Casa Antigua"
+}
+
+### 5.2 Actualizar dirección 2 (Trabajo) a principal (debe desactivar Gym)
+PATCH {{baseUrl}}{{apiPrefix}}/direcciones/2
+Content-Type: application/json
+
+{
+  "es_principal": true
+}
+
+### 5.3 Verificar que Trabajo es ahora principal
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### 5.4 Actualizar múltiples campos
+PATCH {{baseUrl}}{{apiPrefix}}/direcciones/3
+Content-Type: application/json
+
+{
+  "calle": "Avenida Fitness Actualizada",
+  "numero": "789-B",
+  "notas": "Horario: 7am-10pm"
+}
+
+### ============================================
+### 6. MARCAR COMO PRINCIPAL (SHORTCUT)
+### ============================================
+
+### 6.1 Marcar Casa (ID 1) como principal (usando endpoint especial)
+PATCH {{baseUrl}}{{apiPrefix}}/direcciones/1/principal
+
+### 6.2 Verificar que Casa es ahora principal
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### 6.3 Listar todas del usuario 1 - Casa debe estar primero
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1
+
+### ============================================
+### 7. LÓGICA DE PRINCIPAL AUTOMÁTICA
+### ============================================
+
+### Paso 1: Verificar dirección principal de usuario 1 (debe ser Casa)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### Paso 2: Eliminar la dirección principal
+DELETE {{baseUrl}}{{apiPrefix}}/direcciones/1
+
+### Paso 3: Verificar que la siguiente dirección se volvió principal
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### ============================================
+### 8. ELIMINAR DIRECCIÓN (SOFT DELETE)
+### ============================================
+
+### 8.1 Eliminar dirección ID 4 (del usuario 2)
+DELETE {{baseUrl}}{{apiPrefix}}/direcciones/4
+
+### 8.2 Intentar obtener dirección eliminada (no debe aparecer)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/4
+
+### 8.3 Listar direcciones del usuario 2 (solo debe aparecer la principal)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/2
+
+### ============================================
+### TEST CASO DE USO: ÚNICA PRINCIPAL POR USUARIO
+### ============================================
+
+### Escenario:
+### Un usuario quiere cambiar su dirección principal.
+### El sistema debe:
+### 1. Desactivar la dirección principal anterior
+### 2. Activar la nueva
+
+### Paso 1: Ver principal actual
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### Paso 2: Cambiar a otra dirección como principal
+PATCH {{baseUrl}}{{apiPrefix}}/direcciones/2/principal
+
+### Paso 3: Confirmar que cambió
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1/principal
+
+### Paso 4: Ver todas las direcciones (solo una debe ser es_principal=true)
+GET {{baseUrl}}{{apiPrefix}}/direcciones/usuario/1
+
+### RESULTADO ESPERADO:
+### Array con 3-4 direcciones, pero SOLO UNA con es_principal=true

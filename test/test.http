@@ -1,0 +1,32 @@
+### Crear relación entre producto y categoría
+
+POST http://localhost:8000/producto-categoria/
+Content-Type: application/json
+
+{
+  "producto_id": 9,
+  "categoria_id": 4,
+  "es_principal": true
+}
+
+###Ver productos de una categoría
+GET http://localhost:8000/producto-categoria/categoria/1
+
+###Ver categorías de un producto
+GET http://localhost:8000/producto-categoria/producto/9
+
+###Eliminar relación
+DELETE http://localhost:8000/producto-categoria/?producto_id=1&categoria_id=3
+
+###=========================================
+### Crear relación producto - ingrediente
+POST http://localhost:8000/producto-ingrediente/?producto_id=1&ingrediente_id=1&es_removible=true
+
+### Ver ingredientes de un producto
+GET http://localhost:8000/producto-ingrediente/producto/1
+
+### Ver productos de un ingrediente
+GET http://localhost:8000/producto-ingrediente/ingrediente/1
+
+### Eliminar relación
+DELETE http://localhost:8000/producto-ingrediente/?producto_id=1&ingrediente_id=1

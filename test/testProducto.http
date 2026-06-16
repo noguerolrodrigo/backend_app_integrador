@@ -1,0 +1,36 @@
+### Crear producto
+POST http://localhost:8000/productos/
+Content-Type: application/json
+
+{
+  "nombre": "PIzza",
+  "descripcion": "Clásica",
+  "precio_base": 1200,
+  "imagenes_url": [],
+  "stock_cantidad": 10,
+  "disponible": true
+}
+### Leer productos
+GET http://localhost:8000/productos/
+
+### Traer por id
+GET http://localhost:8000/productos/1
+
+### Traer productos con filtro de precio
+GET http://localhost:8000/productos?min_precio=1000&max_precio=1400
+
+### Editar producto
+PUT http://localhost:8000/productos/1
+Content-Type: application/json
+
+{
+  "nombre": "pizza",
+  "descripcion": "pancho prime",
+  "precio_base": 1500,
+  "imagenes_url": [],
+  "stock_cantidad": 10,
+  "disponible": true
+}
+
+### Eliminar producto
+DELETE http://localhost:8000/productos/1

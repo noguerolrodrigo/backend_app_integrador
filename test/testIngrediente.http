@@ -1,0 +1,26 @@
+### Crear ingrediente
+POST http://localhost:8000/ingredientes/
+Content-Type: application/json
+
+{
+  "nombre": "Lechugaa",
+  "descripcion": "Fresco",
+  "es_alergeno": false
+}
+
+### Obtener todos
+GET http://localhost:8000/ingredientes/
+
+### Obtener por id
+GET http://localhost:8000/ingredientes/1
+
+### Actualizar
+PUT http://localhost:8000/ingredientes/1
+Content-Type: application/json
+
+{
+  "descripcion": "Lechuga orgánica"
+}
+
+### Eliminar
+DELETE http://localhost:8000/ingredientes/5

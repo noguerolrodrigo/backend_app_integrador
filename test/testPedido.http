@@ -1,0 +1,294 @@
+### ============================================
+### TEST SUITE: PEDIDO MODULE
+### Pruebas completas del módulo Pedido
+### ============================================
+
+### Variables
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/v1
+
+### ============================================
+### 1. CREAR PEDIDO (UNIT OF WORK)
+### ============================================
+
+### 1.1 Crear pedido exitoso
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "TARJETA_CREDITO",
+  "direccion_entrega": "Calle Principal 123, Apt 4B",
+  "observaciones": "Dejar en portería, urgente",
+  "detalles": [
+    {
+      "producto_id": 1,
+      "cantidad": 2
+    },
+    {
+      "producto_id": 2,
+      "cantidad": 1
+    }
+  ]
+}
+
+### 1.2 Crear pedido con producto inexistente (debe fallar)
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "EFECTIVO",
+  "direccion_entrega": "Calle 5",
+  "detalles": [
+    {
+      "producto_id": 99999,
+      "cantidad": 1
+    }
+  ]
+}
+
+### 1.3 Crear pedido con stock insuficiente (debe fallar)
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "MERCADO_PAGO",
+  "direccion_entrega": "Calle 10",
+  "detalles": [
+    {
+      "producto_id": 1,
+      "cantidad": 99999
+    }
+  ]
+}
+
+### ============================================
+### 2. LISTAR PEDIDOS
+### ============================================
+
+### 2.1 Listar todos los pedidos con paginación
+GET {{baseUrl}}{{apiPrefix}}/pedidos/?skip=0&limit=10
+
+### 2.2 Listar pedidos filtrando por estado
+GET {{baseUrl}}{{apiPrefix}}/pedidos/?estado=PENDIENTE&skip=0&limit=10
+
+### 2.3 Listar pedidos de un usuario específico
+GET {{baseUrl}}{{apiPrefix}}/pedidos/usuario/1?skip=0&limit=20
+
+### 2.4 Listar pedidos de usuario 2
+GET {{baseUrl}}{{apiPrefix}}/pedidos/usuario/2
+
+### ============================================
+### 3. OBTENER DETALLE DE PEDIDO
+### ============================================
+
+### 3.1 Obtener pedido por ID (con detalles y snapshot pattern visible)
+GET {{baseUrl}}{{apiPrefix}}/pedidos/1
+
+### 3.2 Obtener pedido inexistente (debe retornar 404)
+GET {{baseUrl}}{{apiPrefix}}/pedidos/99999
+
+### 3.3 Obtener pedido por número único
+GET {{baseUrl}}{{apiPrefix}}/pedidos/numero/PED-20240525-A1B2C
+
+### ============================================
+### 4. AUDIT TRAIL (APPEND-ONLY)
+### ============================================
+
+### 4.1 Obtener historial de transiciones de un pedido
+GET {{baseUrl}}{{apiPrefix}}/pedidos/1/historial
+
+### 4.2 Obtener historial de otro pedido
+GET {{baseUrl}}{{apiPrefix}}/pedidos/2/historial
+
+### ============================================
+### 5. CAMBIAR ESTADO DE PEDIDO
+### ============================================
+
+### 5.1 Cambiar de PENDIENTE a CONFIRMADO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/1/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "CONFIRMADO",
+  "razon": "Cliente confirmó por teléfono"
+}
+
+### 5.2 Cambiar de CONFIRMADO a EN_PREPARACION
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/1/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "EN_PREPARACION",
+  "razon": "Cocina inició la preparación"
+}
+
+### 5.3 Cambiar de EN_PREPARACION a EN_CAMINO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/1/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "EN_CAMINO",
+  "razon": "Pedido salió en camino"
+}
+
+### 5.4 Cambiar de EN_CAMINO a ENTREGADO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/1/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "ENTREGADO",
+  "razon": "Entregado al cliente"
+}
+
+### 5.5 Intentar transición inválida (ENTREGADO -> PENDIENTE, debe fallar)
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/1/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "PENDIENTE",
+  "razon": "Intento de transición inválida"
+}
+
+### ============================================
+### 6. CANCELAR PEDIDO
+### ============================================
+
+### 6.1 Crear un nuevo pedido para cancelar
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "TARJETA_DEBITO",
+  "direccion_entrega": "Calle Test 999",
+  "observaciones": "Para cancelar",
+  "detalles": [
+    {
+      "producto_id": 1,
+      "cantidad": 1
+    }
+  ]
+}
+
+### 6.2 Cancelar pedido en estado PENDIENTE (debe funcionar)
+POST {{baseUrl}}{{apiPrefix}}/pedidos/2/cancelar?razon=Cliente+cambió+de+opinión
+
+### 6.3 Intentar cancelar pedido en EN_PREPARACION (debe fallar)
+POST {{baseUrl}}{{apiPrefix}}/pedidos/1/cancelar?razon=Cambio+de+idea
+
+### ============================================
+### 7. VALIDAR SI PEDIDO PUEDE CANCELARSE
+### ============================================
+
+### 7.1 Verificar si pedido PENDIENTE puede cancelarse
+GET {{baseUrl}}{{apiPrefix}}/pedidos/2/puede-cancelarse
+
+### 7.2 Verificar si pedido EN_PREPARACION puede cancelarse
+GET {{baseUrl}}{{apiPrefix}}/pedidos/1/puede-cancelarse
+
+### ============================================
+### TEST CASOS DE USO: SNAPSHOT PATTERN
+### ============================================
+
+### Paso 1: Verificar precio actual de un producto
+GET {{baseUrl}}{{apiPrefix}}/productos/1
+
+### Paso 2: Crear pedido con ese producto
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "EFECTIVO",
+  "direccion_entrega": "Calle Snapshot Test",
+  "detalles": [
+    {
+      "producto_id": 1,
+      "cantidad": 1
+    }
+  ]
+}
+
+### Paso 3: Actualizar el precio del producto (ej: 10.00 -> 20.00)
+PATCH {{baseUrl}}{{apiPrefix}}/productos/1
+Content-Type: application/json
+
+{
+  "precio_base": 20.00
+}
+
+### Paso 4: Obtener el pedido creado - debe mostrar el precio ORIGINAL (snapshot)
+GET {{baseUrl}}{{apiPrefix}}/pedidos/3
+
+### RESULTADO ESPERADO:
+### - detalles[0].precio_unitario = 10.00 (snapshot original, NO 20.00)
+### - Esta es la prueba de que el snapshot pattern funciona correctamente
+
+### ============================================
+### TEST MÁQUINA DE ESTADOS
+### ============================================
+
+### Flujo correcto:
+### PENDIENTE → CONFIRMADO → EN_PREPARACION → EN_CAMINO → ENTREGADO
+
+### Crear nuevo pedido para hacer flujo completo
+POST {{baseUrl}}{{apiPrefix}}/pedidos/
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "forma_pago": "TRANSFERENCIA",
+  "direccion_entrega": "Calle Flujo Completo",
+  "detalles": [
+    {
+      "producto_id": 2,
+      "cantidad": 2
+    }
+  ]
+}
+
+### Paso 1: PENDIENTE → CONFIRMADO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/4/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "CONFIRMADO",
+  "razon": "Cliente confirmó"
+}
+
+### Paso 2: CONFIRMADO → EN_PREPARACION
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/4/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "EN_PREPARACION",
+  "razon": "Cocina inició"
+}
+
+### Paso 3: EN_PREPARACION → EN_CAMINO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/4/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "EN_CAMINO",
+  "razon": "En ruta"
+}
+
+### Paso 4: EN_CAMINO → ENTREGADO
+PATCH {{baseUrl}}{{apiPrefix}}/pedidos/4/estado
+Content-Type: application/json
+
+{
+  "estado_nuevo": "ENTREGADO",
+  "razon": "Entregado"
+}
+
+### Paso 5: Ver historial completo (APPEND-ONLY)
+GET {{baseUrl}}{{apiPrefix}}/pedidos/4/historial
+
+### RESULTADO ESPERADO:
+### Array con 5 registros (creación + 4 transiciones)
+### Cada registro muestra: estado_anterior, estado_nuevo, razon, created_at
